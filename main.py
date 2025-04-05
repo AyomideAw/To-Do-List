@@ -1,74 +1,82 @@
 from tkinter import *
 from tkinter import ttk
+from PIL import Image, ImageTk
+import os
 
 class todo:
     def __init__(self, root):
         self.root = root
-        self.root.title('To-Do List') #title of the page
-        self.root.geometry('650x410+300+150') #setting up the size and the positioning of the window
-        self.root.resizable(False,False)
+        self.root.title('To-Do List')
+        self.root.geometry('800x500+300+150')  # Wider and taller for better layout
+        self.root.resizable(False, False)
 
-        #icon
-        Image_icon = PhotoImage(file='Image/task.png')
+        # App Icon
+        img = Image.open('Image/task.png')
+        Image_icon = ImageTk.PhotoImage(img)
         self.root.iconphoto(False, Image_icon)
 
-        self.label = Label(self.root, text='To-Do List Application', 
-             font='ariel, 25 bold', width=10, borderwidth=5, background='light blue', foreground='black') #creating the header label 
-        self.label.pack(side='top', fill = BOTH)
+        # App Title
+        self.label = Label(self.root, text='To-Do List Application',
+                           font='Arial 24 bold', bg='light blue', fg='black', padx=20, pady=10)
+        self.label.pack(fill=BOTH)
 
-        self.label2 = Label(self.root, text='Add Task', 
-             font='ariel, 18 bold', width=10, borderwidth=5, background='light blue', foreground='black') #creating the add task label and placing it 
-        self.label2.place(x=40, y=54)
+        # Add Task Section
+        self.label2 = Label(self.root, text='Add Task',
+                            font='Arial 16 bold', bg='light blue', fg='black')
+        self.label2.place(x=40, y=80)
 
-        self.label3 = Label(self.root, text='Tasks', 
-             font='ariel, 18 bold', width=10, borderwidth=5, background='light blue', foreground='black') #creating the tasks label and placing it 
-        self.label3.place(x=320, y=54)
+        self.text = Text(self.root, bd=3, height=2, width=40, font='Arial 12')
+        self.text.place(x=40, y=120)
 
-        self.main_text = Listbox(self.root, height=9, borderwidth=5, width= 23, font='ariel, 20 italic bold') #creating a list box where the users tasks can be displayed
-        self.main_text.place(x=280, y=100)
+        self.button = Button(self.root, text='Add', font='Arial 14 bold',
+                             width=10, bg='light blue', fg='black', command=self.add)
+        self.button.place(x=60, y=180)
 
-        self.text = Text(self.root, bd=5, height=2, width=30, font='ariel, 10 bold') #creating a text box where the users put in their tasks to be displayed PS: bd is borderwidth
-        self.text.place(x=20, y=120)
+        self.button2 = Button(self.root, text='Delete', font='Arial 14 bold',
+                              width=10, bg='light blue', fg='black', command=self.delete)
+        self.button2.place(x=200, y=180)
 
-        #--------------- ADD TASK ----------------#
+        # Task List Section
+        self.label3 = Label(self.root, text='Tasks',
+                            font='Arial 16 bold', bg='light blue', fg='black')
+        self.label3.place(x=450, y=80)
 
-        def add():
-            content = self.text.get(1.0, END) #getting the content in the text box from the begining(index one) to the end 
-            self.main_text.insert(END, content) #inserting the content from the text box to the list box
-            with open('data.txt', 'a') as file: #writing the content to the text file
-                file.write(content)
-                file.seek(0)
-                file.close()
-            self.text.delete(1.0, END) #deleting everything in the text box after its been added
+        self.main_text = Listbox(self.root, height=13, width=40,
+                                 bd=3, font='Arial 12')
+        self.main_text.place(x=400, y=120)
 
-        def delete():
-            delete_ = self.main_text.curselection() #when a particular task its selected it identifies which one is to be deleted
-            look = self.main_text.get(delete_)
-            with open('data.txt', 'r+') as f: #reading each line in the txt file
-                #deleting the item from the text file
-                new_f = f.readlines()
-                f.seek(0)
-                for line in new_f:
-                    item = str(look) #changing the look item to a string
-                    if item not in line:
-                        f.write(line)
-                f.truncate()
-            self.main_text.delete(delete_) #deletes the item selected on the list box
+        # Load tasks if file exists
+        if not os.path.exists('tasklist.txt'):
+            with open('tasklist.txt', 'w') as f:
+                pass
 
-        with open('data.txt', 'r') as file:
+        with open('tasklist.txt', 'r') as file:
             read = file.readlines()
-            for i in read:
-                ready = i.split() #each task will be on a separate line in the list box
-                self.main_text.insert(END, ready)
-            file.close()
+            for line in read:
+                self.main_text.insert(END, line.strip())
 
-        self.button = Button(self.root, text='Add', font='sarif, 20 bold italic', 
-                width=10, bd=5, background='light blue', foreground='black', command=add)
-        self.button.place(x=30, y=180) #placing it on the screen
+    def add(self):
+        content = self.text.get(1.0, END).strip()
+        if content:
+            self.main_text.insert(END, content + '\n')
+            with open('tasklist.txt', 'a') as file:
+                file.write(content + '\n')
+            self.text.delete(1.0, END)
 
-        self.button2 = Button(self.root, text='Delete', font='sarif, 20 bold italic', 
-                width=10, bd=5, background='light blue', foreground='black', command=delete)
-        self.button2.place(x=30, y=280) #placing it on the window
+    def delete(self):
+        try:
+            selected = self.main_text.curselection()
+            task = self.main_text.get(selected)
+            self.main_text.delete(selected)
+
+            with open('tasklist.txt', 'r') as file:
+                lines = file.readlines()
+            with open('tasklist.txt', 'w') as file:
+                for line in lines:
+                    if line.strip() != task.strip():
+                        file.write(line)
+        except IndexError:
+            pass  # No item selected
 
 def main():
     root = Tk()
